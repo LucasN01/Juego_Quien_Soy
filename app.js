@@ -464,7 +464,9 @@ function _showMyCard(assignments) {
   document.getElementById('cardCategoryPill').innerHTML = `${myAssignment.icon} ${myAssignment.category}`;
   document.getElementById('cardCharacterName').textContent = myAssignment.character;
 
-  // Resetear estado visual
+  // Resetear estado visual y modo horizontal
+  document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+  document.body.classList.remove('card-horizontal');
   const inner = document.getElementById('onlineCardInner');
   inner.classList.remove('flipped');
   inner.classList.add('card-back-normal');
@@ -499,11 +501,15 @@ let cardState = 0; // 0=nombre, 1=personaje revelado, 2=modo frente+listo
 
 function handleCardTap() {
   if (cardState === 0) {
-    // Primer toque: revelar personaje (voltear la tarjeta)
+    // Primer toque: revelar personaje + rotar pantalla a horizontal (antihorario)
     document.getElementById('onlineCardInner').classList.add('flipped');
-    document.getElementById('tapHint').textContent = '👆 ¡Ya viste tu personaje! Tocá para ponerte en la frente y confirmar';
+    document.getElementById('tapHint').textContent = '👆 Poné el celu en la frente y tocá para confirmar';
     cardState = 1;
     onlineState.cardRevealed = true;
+
+    // Activar modo horizontal: rotar toda la pantalla 90° antihorario
+    document.getElementById('screenCard').classList.add('card-horizontal-screen');
+    document.body.classList.add('card-horizontal');
 
   } else if (cardState === 1) {
     // Segundo toque: modo frente + marcar listo en un solo paso
@@ -521,6 +527,9 @@ function handleCardTap() {
 
     setTimeout(() => {
       cardState = 0;
+      // Desactivar modo horizontal al salir
+      document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+      document.body.classList.remove('card-horizontal');
       clearListeners();
 
       const adminBtn = document.getElementById('adminNewRoundBtn');
