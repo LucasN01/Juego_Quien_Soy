@@ -23,8 +23,8 @@
   --neon-orange: #ff7a00;
 
   /* Primario del juego */
-  --primary: #ff2d78;
-  --primary-glow: rgba(255,45,120,0.35);
+  --primary: #ffab2d;
+  --primary-glow: hsla(0, 100%, 59%, 0.35);
   --primary-soft: rgba(255,45,120,0.12);
 
   --text: #f5f5ff;

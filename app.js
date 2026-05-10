@@ -187,34 +187,83 @@ function pickCharacter(selectedCats, manualWords) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function pickUniqueCharacters(playerCount, selectedCats, manualWords) {
-  const pool = [];
+function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex) {
+  // Pool de palabras de categorías
+  const catPool = [];
   selectedCats.forEach(cat => {
     if (CATEGORIES[cat]) {
-      CATEGORIES[cat].words.forEach(w => pool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
+      CATEGORIES[cat].words.forEach(w => catPool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
     }
   });
-  if (manualWords && manualWords.length > 0) {
-    manualWords.forEach(w => pool.push({ word: w, category: 'Manual', icon: '✏️' }));
+
+  // Pool de palabras manuales
+  const manualPool = (manualWords && manualWords.length > 0)
+    ? manualWords.map(w => ({ word: w, category: 'Manual', icon: '✏️' }))
+    : [];
+
+  if (catPool.length === 0 && manualPool.length === 0) return null;
+
+  // Si no hay palabras manuales, usar pool normal
+  if (manualPool.length === 0) {
+    const shuffled = [...catPool].sort(() => Math.random() - 0.5);
+    const assignments = [];
+    const used = new Set();
+    for (let i = 0; i < playerCount; i++) {
+      const unique = shuffled.find(item => !used.has(item.word));
+      if (unique) { assignments.push(unique); used.add(unique.word); }
+      else { assignments.push(shuffled[i % shuffled.length]); }
+    }
+    return assignments;
   }
-  if (pool.length === 0) return null;
 
-  // Shuffle
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  // Con palabras manuales: garantizar que al menos una le toque a alguien que NO sea el admin
+  const assignments = new Array(playerCount).fill(null);
+  const usedWords = new Set();
 
-  // Intentar personajes únicos; si no alcanza el pool, repetir
-  const assignments = [];
-  const used = new Set();
+  // Shuffle ambos pools
+  const shuffledCat = [...catPool].sort(() => Math.random() - 0.5);
+  const shuffledManual = [...manualPool].sort(() => Math.random() - 0.5);
+
+  // Al admin siempre le toca una palabra de categoría
+  if (adminIndex !== undefined && adminIndex !== null && catPool.length > 0) {
+    assignments[adminIndex] = shuffledCat[0];
+    usedWords.add(shuffledCat[0].word);
+  }
+
+  // Índices de no-admin
+  const nonAdminIndices = [];
   for (let i = 0; i < playerCount; i++) {
-    const unique = shuffled.find(item => !used.has(item.word));
-    if (unique) {
-      assignments.push(unique);
-      used.add(unique.word);
-    } else {
-      // Pool agotado: usar aleatorio (repetición)
-      assignments.push(shuffled[i % shuffled.length]);
+    if (i !== adminIndex) nonAdminIndices.push(i);
+  }
+
+  // Distribuir palabras manuales entre jugadores no-admin
+  let manualUsed = 0;
+  for (let i = 0; i < nonAdminIndices.length && manualUsed < shuffledManual.length; i++) {
+    const idx = nonAdminIndices[i];
+    const word = shuffledManual[manualUsed];
+    if (!usedWords.has(word.word)) {
+      assignments[idx] = word;
+      usedWords.add(word.word);
+      manualUsed++;
     }
   }
+
+  // Rellenar los que quedaron sin asignar con palabras de categorías
+  let catIdx = 0;
+  for (let i = 0; i < playerCount; i++) {
+    if (assignments[i] === null) {
+      while (catIdx < shuffledCat.length && usedWords.has(shuffledCat[catIdx].word)) catIdx++;
+      if (catIdx < shuffledCat.length) {
+        assignments[i] = shuffledCat[catIdx];
+        usedWords.add(shuffledCat[catIdx].word);
+        catIdx++;
+      } else {
+        // Pool agotado, repetir
+        assignments[i] = shuffledCat[Math.floor(Math.random() * shuffledCat.length)];
+      }
+    }
+  }
+
   return assignments;
 }
 
@@ -361,10 +410,13 @@ async function launchGame() {
   }
 
   // Asignar personajes únicos a cada jugador
+  // El admin (quien ingresó las palabras manuales) no debe recibirlas
+  const adminIndex = playerIds.indexOf(onlineState.myId);
   const characterAssignments = pickUniqueCharacters(
     playerIds.length,
     onlineState.selectedCategories,
-    manualWordsSetup
+    manualWordsSetup,
+    adminIndex
   );
 
   if (!characterAssignments) {
@@ -418,7 +470,7 @@ function _showMyCard(assignments) {
   inner.classList.add('card-back-normal');
   inner.classList.remove('card-back-forehead');
 
-  document.getElementById('tapHint').textContent = '👆 Tocá la tarjeta para revelar tu personaje';
+  document.getElementById('tapHint').textContent = '👆 Tocá para ver tu personaje';
 
   clearListeners();
   goTo('screenCard');
@@ -443,40 +495,40 @@ function _showMyCard(assignments) {
 }
 
 // ——— TAP EN TARJETA ———
-let cardState = 0; // 0=front, 1=revealed, 2=confirmed
+let cardState = 0; // 0=nombre, 1=personaje revelado, 2=modo frente+listo
 
 function handleCardTap() {
   if (cardState === 0) {
-    // Primer toque: revelar personaje (voltear)
+    // Primer toque: revelar personaje (voltear la tarjeta)
     document.getElementById('onlineCardInner').classList.add('flipped');
-    document.getElementById('tapHint').textContent = '👆 Ponete el teléfono en la frente y tocá para confirmar';
+    document.getElementById('tapHint').textContent = '👆 ¡Ya viste tu personaje! Tocá para ponerte en la frente y confirmar';
     cardState = 1;
     onlineState.cardRevealed = true;
 
   } else if (cardState === 1) {
-    // Segundo toque: cambiar a modo "frente" (texto más grande, girado)
-    // El usuario ya vio su personaje; ahora lo pone en la frente
+    // Segundo toque: modo frente + marcar listo en un solo paso
     const back = document.getElementById('onlineCardBack');
     back.className = 'game-card-face card-back card-back-forehead';
 
     const charEl = document.getElementById('cardCharacterName');
     charEl.classList.add('forehead');
 
-    document.getElementById('tapHint').textContent = '✅ ¡Todos pueden ver tu personaje! Tocá para confirmar que estás listo';
+    document.getElementById('tapHint').textContent = '✅ ¡Todos pueden ver tu personaje!';
     cardState = 2;
 
-  } else if (cardState === 2) {
-    // Tercer toque: marcar como listo
+    // Marcar como listo inmediatamente
     roomRef.child('game/assignments/' + onlineState.myId + '/ready').set(true);
-    cardState = 0;
-    clearListeners();
 
-    // Admin vs player: mostrar pantallas de espera distintas
-    const adminBtn = document.getElementById('adminNewRoundBtn');
-    if (adminBtn) adminBtn.style.display = onlineState.isAdmin ? 'flex' : 'none';
+    setTimeout(() => {
+      cardState = 0;
+      clearListeners();
 
-    goTo('screenWaitEnd');
-    listenWaitEnd();
+      const adminBtn = document.getElementById('adminNewRoundBtn');
+      if (adminBtn) adminBtn.style.display = onlineState.isAdmin ? 'flex' : 'none';
+
+      goTo('screenWaitEnd');
+      listenWaitEnd();
+    }, 1500);
   }
 }
 
