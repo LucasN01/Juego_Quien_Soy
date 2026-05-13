@@ -19,7 +19,7 @@ let onlineState = {
   myId: '',
   myName: '',
   isAdmin: false,
-  selectedCategories: new Set(Object.keys(CATEGORIES).slice(0, 3)),
+  selectedCategories: new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))),
   manualWords: [],           // palabras ingresadas manualmente para esta partida
   cardRevealed: false,
 };
@@ -376,7 +376,7 @@ function renderPlayerList(containerId, list, isAdmin) {
 // ——— CONFIGURACIÓN (admin) ———
 function goToSetup() {
   manualWordsSetup = [];
-  onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).slice(0, 3));
+  onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i)));
   buildCatGrid('setupCatGrid', onlineState.selectedCategories);
   initManualWords('setupManualTags', 'setupManualInput', 'setupManualAddBtn');
   goTo('screenSetup');
@@ -750,7 +750,7 @@ function leaveRoom() {
   clearSession();
   onlineState = {
     roomCode: '', myId: '', myName: '', isAdmin: false,
-    selectedCategories: new Set(Object.keys(CATEGORIES).slice(0, 3)),
+    selectedCategories: new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))),
     manualWords: [], cardRevealed: false,
   };
   manualWordsSetup = [];
