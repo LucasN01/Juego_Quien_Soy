@@ -421,6 +421,10 @@ input::placeholder { color: var(--muted); }
   width: 100%; max-width: 300px;
   perspective: 1200px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .game-card-inner {
   position: relative; width: 100%;
@@ -580,6 +584,36 @@ body.card-horizontal { overflow: hidden; }
   border: 1px solid rgba(255,107,107,0.16);
   width: 100%; max-width: 360px;
   display: none;
+}
+
+/* ——— COUNTDOWN OVERLAY ——— */
+.countdown-overlay {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(9,9,16,0.92);
+  backdrop-filter: blur(6px);
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--sp-6);
+}
+.countdown-overlay.active { display: flex; }
+.countdown-number {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(6rem, 28vw, 10rem);
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(155deg, #ffffff 0%, #ffcfa0 48%, var(--primary) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: countPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.countdown-label {
+  font-size: 0.9rem; color: var(--muted2); letter-spacing: 1px;
+  text-transform: uppercase; font-weight: 600;
+}
+@keyframes countPop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 /* ——— CONFETTI ——— */
