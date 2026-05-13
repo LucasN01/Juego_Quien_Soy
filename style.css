@@ -431,6 +431,7 @@ input::placeholder { color: var(--muted); }
   aspect-ratio: 2/3;
   max-height: 420px;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .game-card-inner.flipped { transform: rotateY(180deg); }
@@ -443,6 +444,11 @@ input::placeholder { color: var(--muted); }
   align-items: center; justify-content: center;
   padding: var(--sp-8) var(--sp-6);
 }
+
+/* Fix Android: ocultar explícitamente la cara que no corresponde,
+   sin depender solo de backface-visibility */
+.game-card-inner:not(.flipped) .card-back  { visibility: hidden; }
+.game-card-inner.flipped        .card-front { visibility: hidden; }
 
 .card-front {
   background: var(--surface2);
