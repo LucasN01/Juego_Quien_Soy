@@ -469,8 +469,10 @@ function _showMyCard(assignments) {
   document.body.classList.remove('card-horizontal');
   const inner = document.getElementById('onlineCardInner');
   inner.classList.remove('flipped');
-  inner.classList.add('card-back-normal');
-  inner.classList.remove('card-back-forehead');
+
+  // Resetear clases del dorso (sin tocar el inner, para no generar bordes fantasma)
+  const back = document.getElementById('onlineCardBack');
+  back.className = 'game-card-face card-back card-back-normal';
 
   document.getElementById('tapHint').textContent = '👆 Tocá para ver tu personaje';
 
