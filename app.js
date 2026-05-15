@@ -390,14 +390,59 @@ async function kickPlayer(playerId) {
   if (!confirmKick) return;
 
   try {
-    await roomRef.child('players/' + playerId).remove();
 
-    // Si estaba en partida, borrar también asignación
-    await roomRef.child('game/assignments/' + playerId).remove();
+    // Marcar como expulsado
+    await roomRef.child('kicked/' + playerId).set(true);
+
+    // Esperar un instante para que el jugador lo detecte
+    setTimeout(async () => {
+
+      // Eliminar jugador
+      await roomRef.child('players/' + playerId).remove();
+
+      // Eliminar asignación si existe
+      await roomRef.child('game/assignments/' + playerId).remove();
+
+    }, 500);
 
   } catch (e) {
     alert('No se pudo eliminar el jugador.');
   }
+}
+
+function listenKicked() {
+
+  const kickedRef = roomRef.child('kicked/' + onlineState.myId);
+
+  const kickedHandler = kickedRef.on('value', snap => {
+
+    if (snap.val() === true) {
+
+      alert('Fuiste expulsado de la sala.');
+
+      clearListeners();
+
+      clearSession();
+
+      onlineState = {
+        roomCode: '',
+        myId: '',
+        myName: '',
+        isAdmin: false,
+        selectedCategories: new Set(
+          Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))
+        ),
+        manualWords: [],
+        cardRevealed: false,
+      };
+
+      roomRef = null;
+
+      goTo('screenHome');
+    }
+  });
+
+  unsubscribers.push(() => kickedRef.off('value', kickedHandler));
 }
 
 
@@ -479,6 +524,7 @@ async function launchGame() {
 
 // ——— MOSTRAR MI TARJETA ———
 function _showMyCard(assignments) {
+  listenKicked();
   const myAssignment = assignments[onlineState.myId];
   onlineState.cardRevealed = false;
 
@@ -611,6 +657,7 @@ function handleCardTap() {
 // ——— ESPERA FIN DE RONDA ———
 function listenWaitEnd() {
   clearListeners();
+  listenKicked();
   const sRef = roomRef.child('status');
   const sHandler = sRef.on('value', snap => {
     const st = snap.val();
@@ -639,12 +686,6 @@ function listenWaitEnd() {
     if (el) el.textContent = `${ready} / ${total} listos`;
   });
   unsubscribers.push(() => gRef.off('value', gHandler));
-
-  if (!players[onlineState.myId]) {
-    alert('El administrador te eliminó de la sala.');
-    leaveRoom();
-    return;
-  }
 }
 
 // ——— NUEVA PARTIDA (admin) ———
@@ -718,6 +759,8 @@ async function joinRoom() {
 function listenPlayerWaiting() {
   clearListeners();
 
+  listenKicked();
+
   const pRef = roomRef.child('players');
   const pHandler = pRef.on('value', snap => {
     const players = snap.val() || {};
@@ -736,11 +779,6 @@ function listenPlayerWaiting() {
   });
   unsubscribers.push(() => sRef.off('value', sHandler));
 
-  if (!players[onlineState.myId]) {
-    alert('El administrador te eliminó de la sala.');
-    leaveRoom();
-    return;
-  }
 }
 
 async function showMyOnlineCard() {
