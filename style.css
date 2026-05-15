@@ -144,13 +144,13 @@ body {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(4rem, 16vw, 7.5rem);
   font-weight: 700;
-  line-height: 0.9;
+  line-height: 1.05;
   text-align: center;
   letter-spacing: 0.02em;
+  padding: 0.05em 0.1em;
   background: linear-gradient(158deg, #FFCE00 0%, #FF8800 42%, #E8392A 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 3px 8px rgba(232,57,42,0.18));
   animation: logoWobble 7s ease-in-out infinite;
 }
 
