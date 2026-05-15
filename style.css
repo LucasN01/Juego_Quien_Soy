@@ -217,7 +217,7 @@ body {
 .btn-ghost:hover { color: var(--text); border-color: var(--border-hi); background: var(--surface); }
 
 .btn-cat {
-  background: var(--surface);
+  background: rgba(255,255,255,0.55);
   border: 2.5px solid var(--border-md);
   border-radius: var(--r-md);
   padding: 14px 10px;
@@ -239,9 +239,9 @@ body {
 .btn-cat span.cat-icon { font-size: 1.6rem; }
 .btn-cat.selected {
   border-color: var(--primary);
-  background: var(--primary-dim);
-  color: var(--primary);
-  box-shadow: 0 3px 0 rgba(232,57,42,0.18);
+  background: rgba(255,255,255,0.92);
+  color: var(--text);
+  box-shadow: 0 3px 0 rgba(232,57,42,0.20);
 }
 
 /* ——— TARJETAS DE OPCIÓN ——— */
