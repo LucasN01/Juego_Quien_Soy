@@ -9,7 +9,7 @@
 /* ——— SISTEMA DE DISEÑO ——— */
 :root {
   /* Fondo cálido */
-  --bg:        #f6d7b4;
+  --bg:        #f6dcbf;
   --surface:   #FFFFFF;
   --surface2:  #FFF4E8;
   --surface3:  #FFE8CC;
@@ -838,12 +838,12 @@ body.card-horizontal { overflow: hidden; }
   font-family: 'Fredoka', sans-serif;
 }
 
-/* Option card alt (azul) */
+/* Option card alt — igual que la base */
 .option-card--alt {
-  border-color: rgba(26,108,196,0.18);
-  background: rgba(26,108,196,0.03);
+  border-color: var(--border-md);
+  background: var(--surface);
 }
-.option-card-title--cyan { color: var(--accent-cyan); }
+.option-card-title--cyan { color: var(--text); }
 
 .wait-end-emoji { font-size: 3.5rem; margin-bottom: var(--sp-4); }
 
