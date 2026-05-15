@@ -246,7 +246,7 @@ body {
 
 /* ——— TARJETAS DE OPCIÓN ——— */
 .option-card {
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.63);
   border: 2.5px solid var(--border-md);
   border-radius: var(--r-lg);
   padding: var(--sp-5) var(--sp-4);
@@ -887,4 +887,35 @@ body.card-horizontal { overflow: hidden; }
   padding: var(--sp-4);
   color: var(--text);
   font-size: 0.88rem;
+}
+
+
+.kick-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  background: rgba(232,57,42,0.12);
+  color: var(--primary);
+
+  font-weight: 800;
+  font-size: 0.95rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background var(--ease),
+    transform var(--ease);
+}
+
+.kick-btn:hover {
+  background: rgba(232,57,42,0.22);
+}
+
+.kick-btn:active {
+  transform: scale(0.9);
 }

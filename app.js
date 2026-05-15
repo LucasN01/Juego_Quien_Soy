@@ -366,12 +366,40 @@ function renderPlayerList(containerId, list, isAdmin) {
       <div class="p-avatar" style="background:${p.avatarColor || '#ff2d78'}">
         ${p.name[0].toUpperCase()}
       </div>
+
       <span class="p-name">${p.name}</span>
+
       ${p.isAdmin ? '<span class="admin-badge">Admin</span>' : ''}
+
+      ${
+        isAdmin && !p.isAdmin
+          ? `<button class="kick-btn" onclick="kickPlayer('${id}')">✕</button>`
+          : ''
+      }
     `;
     container.appendChild(div);
   });
 }
+
+
+
+async function kickPlayer(playerId) {
+  if (!onlineState.isAdmin) return;
+
+  const confirmKick = confirm('¿Eliminar jugador de la sala?');
+  if (!confirmKick) return;
+
+  try {
+    await roomRef.child('players/' + playerId).remove();
+
+    // Si estaba en partida, borrar también asignación
+    await roomRef.child('game/assignments/' + playerId).remove();
+
+  } catch (e) {
+    alert('No se pudo eliminar el jugador.');
+  }
+}
+
 
 // ——— CONFIGURACIÓN (admin) ———
 function goToSetup() {
@@ -611,6 +639,12 @@ function listenWaitEnd() {
     if (el) el.textContent = `${ready} / ${total} listos`;
   });
   unsubscribers.push(() => gRef.off('value', gHandler));
+
+  if (!players[onlineState.myId]) {
+    alert('El administrador te eliminó de la sala.');
+    leaveRoom();
+    return;
+  }
 }
 
 // ——— NUEVA PARTIDA (admin) ———
@@ -701,6 +735,12 @@ function listenPlayerWaiting() {
     }
   });
   unsubscribers.push(() => sRef.off('value', sHandler));
+
+  if (!players[onlineState.myId]) {
+    alert('El administrador te eliminó de la sala.');
+    leaveRoom();
+    return;
+  }
 }
 
 async function showMyOnlineCard() {
