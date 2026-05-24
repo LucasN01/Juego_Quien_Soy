@@ -933,13 +933,12 @@ body.card-horizontal { overflow: hidden; }
 
 /* Estilo para la imagen del personaje */
 #cardCharacterImage {
-  display: none; 
-  width: 120px; 
-  height: 120px; 
-  object-fit: contain; 
-  border-radius: 50%; 
-  margin: 15px auto;
-  background-color: transparent; 
-  padding: 8px; 
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(140px, 35%);
+  max-height: 18vh;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 6px auto;
 }
-
