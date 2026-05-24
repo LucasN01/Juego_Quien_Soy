@@ -538,6 +538,17 @@ input::placeholder { color: var(--muted); }
 .card-character-name.forehead {
   font-size: clamp(2.2rem, 9.5vw, 3.4rem);
 }
+.card-character-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  text-align: center;
+  margin-top: 6px;
+  font-family: 'Nunito', sans-serif;
+  display: none;
+}
 .card-category-pill {
   display: inline-flex; align-items: center; gap: var(--sp-1);
   background: rgba(255,255,255,0.18);

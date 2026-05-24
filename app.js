@@ -177,11 +177,15 @@ function pickCharacter(selectedCats, manualWords) {
   const pool = [];
   selectedCats.forEach(cat => {
     if (CATEGORIES[cat]) {
-      CATEGORIES[cat].words.forEach(w => pool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
+      CATEGORIES[cat].words.forEach(item => {
+        const w = typeof item === 'object' ? item.word : item;
+        const h = typeof item === 'object' ? (item.hint || '') : '';
+        pool.push({ word: w, hint: h, category: cat, icon: CATEGORIES[cat].icon });
+      });
     }
   });
   if (manualWords && manualWords.length > 0) {
-    manualWords.forEach(w => pool.push({ word: w, category: 'Manual', icon: '✏️' }));
+    manualWords.forEach(w => pool.push({ word: w, hint: '', category: 'Manual', icon: '✏️' }));
   }
   if (pool.length === 0) return null;
   return pool[Math.floor(Math.random() * pool.length)];
@@ -192,13 +196,17 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
   const catPool = [];
   selectedCats.forEach(cat => {
     if (CATEGORIES[cat]) {
-      CATEGORIES[cat].words.forEach(w => catPool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
+      CATEGORIES[cat].words.forEach(item => {
+        const w = typeof item === 'object' ? item.word : item;
+        const h = typeof item === 'object' ? (item.hint || '') : '';
+        catPool.push({ word: w, hint: h, category: cat, icon: CATEGORIES[cat].icon });
+      });
     }
   });
 
   // Pool de palabras manuales
   const manualPool = (manualWords && manualWords.length > 0)
-    ? manualWords.map(w => ({ word: w, category: 'Manual', icon: '✏️' }))
+    ? manualWords.map(w => ({ word: w, hint: '', category: 'Manual', icon: '✏️' }))
     : [];
 
   if (catPool.length === 0 && manualPool.length === 0) return null;
@@ -502,6 +510,7 @@ async function launchGame() {
   playerIds.forEach((id, idx) => {
     assignments[id] = {
       character: characterAssignments[idx].word,
+      hint: characterAssignments[idx].hint || '',
       category: characterAssignments[idx].category,
       icon: characterAssignments[idx].icon,
       ready: false,
@@ -537,6 +546,13 @@ function _showMyCard(assignments) {
   document.getElementById('cardPlayerNameBack').textContent = onlineState.myName;
   document.getElementById('cardCategoryPill').innerHTML = `${myAssignment.icon} ${myAssignment.category}`;
   document.getElementById('cardCharacterName').textContent = myAssignment.character;
+
+  // Hint debajo del personaje
+  const hintEl = document.getElementById('cardCharacterHint');
+  if (hintEl) {
+    hintEl.textContent = myAssignment.hint || '';
+    hintEl.style.display = myAssignment.hint ? 'block' : 'none';
+  }
 
   // Resetear estado visual y modo horizontal
   document.getElementById('screenCard').classList.remove('card-horizontal-screen');
