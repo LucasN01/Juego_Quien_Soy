@@ -199,7 +199,8 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
       CATEGORIES[cat].words.forEach(item => {
         const w = typeof item === 'object' ? item.word : item;
         const h = typeof item === 'object' ? (item.hint || '') : '';
-        catPool.push({ word: w, hint: h, category: cat, icon: CATEGORIES[cat].icon });
+        const img = typeof item === 'object' ? (item.image || '') : ''; // <-- NUEVO
+        catPool.push({ word: w, hint: h, image: img, category: cat, icon: CATEGORIES[cat].icon });
       });
     }
   });
@@ -511,6 +512,7 @@ async function launchGame() {
     assignments[id] = {
       character: characterAssignments[idx].word,
       hint: characterAssignments[idx].hint || '',
+      image: characterAssignments[idx].image || '',
       category: characterAssignments[idx].category,
       icon: characterAssignments[idx].icon,
       ready: false,
@@ -552,6 +554,17 @@ function _showMyCard(assignments) {
   if (hintEl) {
     hintEl.textContent = myAssignment.hint || '';
     hintEl.style.display = myAssignment.hint ? 'block' : 'none';
+  }
+
+  // LOGICA DE LA IMAGEN (NUEVO)
+  const imgEl = document.getElementById('cardCharacterImage');
+  if (imgEl) {
+    if (myAssignment.image) {
+      imgEl.src = myAssignment.image;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none'; // Se oculta si no tiene imagen (ej: palabras manuales)
+    }
   }
 
   // Resetear estado visual y modo horizontal
