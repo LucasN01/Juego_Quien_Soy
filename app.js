@@ -43,15 +43,11 @@ function randomColor() {
 }
 
 // ——— NAVEGACIÓN ———
-function goTo(screenId, pushState = true) {
+function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(screenId).classList.add('active');
-  window.scrollTo(0,0);
-
-  // AGREGAR ESTO:
-  if (pushState) {
-    history.pushState({ screenId: screenId }, "", "#" + screenId);
-  }
+  const target = document.getElementById(screenId);
+  if (target) target.classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 // ——— MODALS ———
@@ -563,6 +559,10 @@ function _showMyCard(assignments) {
     if (snap.val() === 'lobby') {
       clearListeners();
       onlineState.cardRevealed = false;
+      cardState = 0;
+      // Limpiar modo horizontal por si el invitado quedó en ese estado
+      document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+      document.body.classList.remove('card-horizontal');
       if (onlineState.isAdmin) {
         goTo('screenAdminLobby');
         listenAdminLobby();
@@ -642,19 +642,29 @@ function handleCardTap() {
     // Marcar como listo inmediatamente
     roomRef.child('game/assignments/' + onlineState.myId + '/ready').set(true);
 
-    setTimeout(() => {
-      cardState = 0;
-      // Desactivar modo horizontal al salir
-      document.getElementById('screenCard').classList.remove('card-horizontal-screen');
-      document.body.classList.remove('card-horizontal');
-      clearListeners();
+    if (onlineState.isAdmin) {
+      // Solo el admin pasa a la pantalla de espera de fin de ronda
+      setTimeout(() => {
+        cardState = 0;
+        // Desactivar modo horizontal al salir
+        document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+        document.body.classList.remove('card-horizontal');
+        clearListeners();
 
-      const adminBtn = document.getElementById('adminNewRoundBtn');
-      if (adminBtn) adminBtn.style.display = onlineState.isAdmin ? 'flex' : 'none';
+        const adminBtn = document.getElementById('adminNewRoundBtn');
+        if (adminBtn) adminBtn.style.display = 'flex';
 
-      goTo('screenWaitEnd');
-      listenWaitEnd();
-    }, 1500);
+        goTo('screenWaitEnd');
+        listenWaitEnd();
+      }, 1500);
+    }
+    // Los invitados se quedan en la tarjeta — no se hace nada más
+    // (cardState = 2 bloquea futuros taps; la pantalla se actualiza
+    //  cuando el admin lance nueva partida via el listener de 'status')
+
+  } else if (cardState === 2 && !onlineState.isAdmin) {
+    // Invitados: toque extra después del modo frente → no hace nada
+    return;
   }
 }
 
@@ -966,21 +976,7 @@ async function reconnectToRoom(session, ref) {
 }
 
 // ——— INIT ———
-window.addEventListener('popstate', (event) => {
-  if (event.state && event.state.screenId) {
-    // Vuelve a la pantalla guardada en el historial
-    goTo(event.state.screenId, false);
-  } else {
-    // Si no hay historial, vuelve al Home
-    goTo('screenHome', false);
-  }
-});
-
-
-// Inicializar al cargar la página
 window.addEventListener('load', () => {
-  // AGREGAR ESTO:
-  history.replaceState({ screenId: 'screenHome' }, "", "#screenHome");
-  
+  cardState = 0;
   checkPreviousSession();
 });
