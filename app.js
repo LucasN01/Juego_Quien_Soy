@@ -41,6 +41,15 @@ function generateRoomCode() {
 function randomColor() {
   return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 }
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 
 // ——— NAVEGACIÓN ———
 function goTo(screenId, pushState = true) {
@@ -218,7 +227,7 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
 
   // Si no hay palabras manuales, usar pool normal
   if (manualPool.length === 0) {
-    const shuffled = [...catPool].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(catPool);
     const assignments = [];
     const used = new Set();
     for (let i = 0; i < playerCount; i++) {
@@ -234,8 +243,8 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
   const usedWords = new Set();
 
   // Shuffle ambos pools
-  const shuffledCat = [...catPool].sort(() => Math.random() - 0.5);
-  const shuffledManual = [...manualPool].sort(() => Math.random() - 0.5);
+  const shuffledCat = shuffleArray(catPool);
+  const shuffledManual = shuffleArray(manualPool);
 
   // Al admin siempre le toca una palabra de categoría
   if (adminIndex !== undefined && adminIndex !== null && catPool.length > 0) {
@@ -462,7 +471,9 @@ function listenKicked() {
 // ——— CONFIGURACIÓN (admin) ———
 function goToSetup() {
   manualWordsSetup = [];
-  onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i)));
+  if (!onlineState._categoriesEverSet) {
+    onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i)));
+  }
   buildCatGrid('setupCatGrid', onlineState.selectedCategories);
   initManualWords('setupManualTags', 'setupManualInput', 'setupManualAddBtn');
   goTo('screenSetup');
@@ -470,6 +481,7 @@ function goToSetup() {
 
 // ——— LANZAR PARTIDA ———
 async function launchGame() {
+  onlineState._categoriesEverSet = true;
   const errEl = document.getElementById('setupErr');
   errEl.style.display = 'none';
 
@@ -866,6 +878,7 @@ async function showMyOnlineCard() {
 
 // ——— SALIR DE SALA ———
 function leaveRoom() {
+  onlineState._categoriesEverSet = false;
   clearListeners();
   if (roomRef && onlineState.myId) {
     if (onlineState.isAdmin) roomRef.remove();
@@ -877,6 +890,7 @@ function leaveRoom() {
     roomCode: '', myId: '', myName: '', isAdmin: false,
     selectedCategories: new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))),
     manualWords: [], cardRevealed: false,
+    _categoriesEverSet: false,
   };
   manualWordsSetup = [];
   goTo('screenHome');
