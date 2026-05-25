@@ -601,8 +601,6 @@ const CATEGORIES = {
       { word: "Galileo Galilei", hint: "Astrónomo italiano sistema solar", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Galileo_Galilei.png?raw=true" },
       { word: "Isaac Newton", hint: "Física gravedad manzana", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Isaac_Newton.png?raw=true" },
       { word: "Albert Einstein", hint: "Física relatividad teoría", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Albert_Einstein.png?raw=true" },
-      { word: "Marie Curie", hint: "Científica polaca radioactividad", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Marie_Curie.png?raw=true" },
-      { word: "Charles Darwin", hint: "Evolución especies naturalista", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Charles_Darwin.png?raw=true" },
       { word: "Sigmund Freud", hint: "Padre del psicoanálisis", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Sigmund_Freud.png?raw=true" },
       { word: "Karl Marx", hint: "Filósofo comunismo capitalismo", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Karl_Marx.png?raw=true" },
       { word: "Nikola Tesla", hint: "Inventor electricidad corriente alterna", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/Nikola_Tesla.png?raw=true" },
@@ -647,7 +645,6 @@ const CATEGORIES = {
       { word: "Charles Darwin", hint: "Evolución especies naturalista", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/darwin.avif?raw=true" },
       { word: "Galileo Galilei", hint: "Astrónomo italiano sistema solar", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/galileo.avif?raw=true" },
       { word: "George Washington", hint: "Primer presidente Estados Unidos", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/washington.avif?raw=true" },
-      { word: "Hércules", hint: "Semidiós fuerza doce trabajos", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/hercules.webp?raw=true" },
       { word: "Juana Azurduy", hint: "Heroína independencia Sudamérica", image: "https://github.com/LucasN01/Juego_Quien_Soy/blob/main/image/personajes/personajes_historicos/juanaAzurduy.png?raw=true" }
     ]
   }
