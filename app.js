@@ -27,7 +27,6 @@ let onlineState = {
 let db = null;
 let roomRef = null;
 let unsubscribers = [];
-let wakeLock = null;
 
 // ——— UTILIDADES ———
 function uid() {
@@ -43,47 +42,12 @@ function randomColor() {
   return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 }
 
-// ——— WAKE LOCK (evita que la pantalla se apague en Android) ———
-async function requestWakeLock() {
-  if ('wakeLock' in navigator) {
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-    } catch (e) {
-      console.warn('Wake Lock no disponible:', e);
-    }
-  }
-}
-
-function releaseWakeLock() {
-  if (wakeLock) {
-    wakeLock.release();
-    wakeLock = null;
-  }
-}
-
-// Si el usuario minimiza la app y vuelve, reactivar el wake lock
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    const cardScreen = document.getElementById('screenCard');
-    if (cardScreen && cardScreen.classList.contains('active')) {
-      requestWakeLock();
-    }
-  }
-});
-
 // ——— NAVEGACIÓN ———
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById(screenId);
   if (target) target.classList.add('active');
   window.scrollTo(0, 0);
-
-  // Wake lock: activar en pantalla de carta, liberar en las demás
-  if (screenId === 'screenCard') {
-    requestWakeLock();
-  } else {
-    releaseWakeLock();
-  }
 }
 
 // ——— MODALS ———
