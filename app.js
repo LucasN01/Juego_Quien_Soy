@@ -19,7 +19,7 @@ let onlineState = {
   myId: '',
   myName: '',
   isAdmin: false,
-  selectedCategories: new Set(Object.keys(CATEGORIES).slice(0, 3)),
+  selectedCategories: new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))),
   manualWords: [],           // palabras ingresadas manualmente para esta partida
   cardRevealed: false,
 };
@@ -41,13 +41,26 @@ function generateRoomCode() {
 function randomColor() {
   return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 }
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 
 // ——— NAVEGACIÓN ———
-function goTo(screenId) {
+function goTo(screenId, pushState = true) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById(screenId);
-  if (target) target.classList.add('active');
-  window.scrollTo(0, 0);
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0,0);
+
+  // AGREGAR ESTO:
+  if (pushState) {
+    history.pushState({ screenId: screenId }, "", "#" + screenId);
+  }
 }
 
 // ——— MODALS ———
@@ -177,11 +190,15 @@ function pickCharacter(selectedCats, manualWords) {
   const pool = [];
   selectedCats.forEach(cat => {
     if (CATEGORIES[cat]) {
-      CATEGORIES[cat].words.forEach(w => pool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
+      CATEGORIES[cat].words.forEach(item => {
+        const w = typeof item === 'object' ? item.word : item;
+        const h = typeof item === 'object' ? (item.hint || '') : '';
+        pool.push({ word: w, hint: h, category: cat, icon: CATEGORIES[cat].icon });
+      });
     }
   });
   if (manualWords && manualWords.length > 0) {
-    manualWords.forEach(w => pool.push({ word: w, category: 'Manual', icon: '✏️' }));
+    manualWords.forEach(w => pool.push({ word: w, hint: '', category: 'Manual', icon: '✏️' }));
   }
   if (pool.length === 0) return null;
   return pool[Math.floor(Math.random() * pool.length)];
@@ -192,20 +209,25 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
   const catPool = [];
   selectedCats.forEach(cat => {
     if (CATEGORIES[cat]) {
-      CATEGORIES[cat].words.forEach(w => catPool.push({ word: w, category: cat, icon: CATEGORIES[cat].icon }));
+      CATEGORIES[cat].words.forEach(item => {
+        const w = typeof item === 'object' ? item.word : item;
+        const h = typeof item === 'object' ? (item.hint || '') : '';
+        const img = typeof item === 'object' ? (item.image || '') : ''; // <-- NUEVO
+        catPool.push({ word: w, hint: h, image: img, category: cat, icon: CATEGORIES[cat].icon });
+      });
     }
   });
 
   // Pool de palabras manuales
   const manualPool = (manualWords && manualWords.length > 0)
-    ? manualWords.map(w => ({ word: w, category: 'Manual', icon: '✏️' }))
+    ? manualWords.map(w => ({ word: w, hint: '', category: 'Manual', icon: '✏️' }))
     : [];
 
   if (catPool.length === 0 && manualPool.length === 0) return null;
 
   // Si no hay palabras manuales, usar pool normal
   if (manualPool.length === 0) {
-    const shuffled = [...catPool].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(catPool);
     const assignments = [];
     const used = new Set();
     for (let i = 0; i < playerCount; i++) {
@@ -221,8 +243,8 @@ function pickUniqueCharacters(playerCount, selectedCats, manualWords, adminIndex
   const usedWords = new Set();
 
   // Shuffle ambos pools
-  const shuffledCat = [...catPool].sort(() => Math.random() - 0.5);
-  const shuffledManual = [...manualPool].sort(() => Math.random() - 0.5);
+  const shuffledCat = shuffleArray(catPool);
+  const shuffledManual = shuffleArray(manualPool);
 
   // Al admin siempre le toca una palabra de categoría
   if (adminIndex !== undefined && adminIndex !== null && catPool.length > 0) {
@@ -366,17 +388,92 @@ function renderPlayerList(containerId, list, isAdmin) {
       <div class="p-avatar" style="background:${p.avatarColor || '#ff2d78'}">
         ${p.name[0].toUpperCase()}
       </div>
+
       <span class="p-name">${p.name}</span>
+
       ${p.isAdmin ? '<span class="admin-badge">Admin</span>' : ''}
+
+      ${
+        isAdmin && !p.isAdmin
+          ? `<button class="kick-btn" onclick="kickPlayer('${id}')">✕</button>`
+          : ''
+      }
     `;
     container.appendChild(div);
   });
 }
 
+
+
+async function kickPlayer(playerId) {
+  if (!onlineState.isAdmin) return;
+
+  const confirmKick = confirm('¿Eliminar jugador de la sala?');
+  if (!confirmKick) return;
+
+  try {
+
+    // Marcar como expulsado
+    await roomRef.child('kicked/' + playerId).set(true);
+
+    // Esperar un instante para que el jugador lo detecte
+    setTimeout(async () => {
+
+      // Eliminar jugador
+      await roomRef.child('players/' + playerId).remove();
+
+      // Eliminar asignación si existe
+      await roomRef.child('game/assignments/' + playerId).remove();
+
+    }, 500);
+
+  } catch (e) {
+    alert('No se pudo eliminar el jugador.');
+  }
+}
+
+function listenKicked() {
+
+  const kickedRef = roomRef.child('kicked/' + onlineState.myId);
+
+  const kickedHandler = kickedRef.on('value', snap => {
+
+    if (snap.val() === true) {
+
+      alert('Fuiste expulsado de la sala.');
+
+      clearListeners();
+
+      clearSession();
+
+      onlineState = {
+        roomCode: '',
+        myId: '',
+        myName: '',
+        isAdmin: false,
+        selectedCategories: new Set(
+          Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))
+        ),
+        manualWords: [],
+        cardRevealed: false,
+      };
+
+      roomRef = null;
+
+      goTo('screenHome');
+    }
+  });
+
+  unsubscribers.push(() => kickedRef.off('value', kickedHandler));
+}
+
+
 // ——— CONFIGURACIÓN (admin) ———
 function goToSetup() {
   manualWordsSetup = [];
-  onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).slice(0, 3));
+  if (!onlineState._categoriesEverSet) {
+    onlineState.selectedCategories = new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i)));
+  }
   buildCatGrid('setupCatGrid', onlineState.selectedCategories);
   initManualWords('setupManualTags', 'setupManualInput', 'setupManualAddBtn');
   goTo('screenSetup');
@@ -384,6 +481,7 @@ function goToSetup() {
 
 // ——— LANZAR PARTIDA ———
 async function launchGame() {
+  onlineState._categoriesEverSet = true;
   const errEl = document.getElementById('setupErr');
   errEl.style.display = 'none';
 
@@ -429,6 +527,8 @@ async function launchGame() {
   playerIds.forEach((id, idx) => {
     assignments[id] = {
       character: characterAssignments[idx].word,
+      hint: characterAssignments[idx].hint || '',
+      image: characterAssignments[idx].image || '',
       category: characterAssignments[idx].category,
       icon: characterAssignments[idx].icon,
       ready: false,
@@ -451,6 +551,7 @@ async function launchGame() {
 
 // ——— MOSTRAR MI TARJETA ———
 function _showMyCard(assignments) {
+  listenKicked();
   const myAssignment = assignments[onlineState.myId];
   onlineState.cardRevealed = false;
 
@@ -464,13 +565,33 @@ function _showMyCard(assignments) {
   document.getElementById('cardCategoryPill').innerHTML = `${myAssignment.icon} ${myAssignment.category}`;
   document.getElementById('cardCharacterName').textContent = myAssignment.character;
 
+  // Hint debajo del personaje
+  const hintEl = document.getElementById('cardCharacterHint');
+  if (hintEl) {
+    hintEl.textContent = myAssignment.hint || '';
+    hintEl.style.display = myAssignment.hint ? 'block' : 'none';
+  }
+
+  // LOGICA DE LA IMAGEN (NUEVO)
+  const imgEl = document.getElementById('cardCharacterImage');
+  if (imgEl) {
+    if (myAssignment.image) {
+      imgEl.src = myAssignment.image;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none'; // Se oculta si no tiene imagen (ej: palabras manuales)
+    }
+  }
+
   // Resetear estado visual y modo horizontal
   document.getElementById('screenCard').classList.remove('card-horizontal-screen');
   document.body.classList.remove('card-horizontal');
   const inner = document.getElementById('onlineCardInner');
   inner.classList.remove('flipped');
-  inner.classList.add('card-back-normal');
-  inner.classList.remove('card-back-forehead');
+
+  // Resetear clases del dorso (sin tocar el inner, para no generar bordes fantasma)
+  const back = document.getElementById('onlineCardBack');
+  back.className = 'game-card-face card-back card-back-normal';
 
   document.getElementById('tapHint').textContent = '👆 Tocá para ver tu personaje';
 
@@ -483,6 +604,10 @@ function _showMyCard(assignments) {
     if (snap.val() === 'lobby') {
       clearListeners();
       onlineState.cardRevealed = false;
+      cardState = 0;
+      // Limpiar modo horizontal por si el invitado quedó en ese estado
+      document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+      document.body.classList.remove('card-horizontal');
       if (onlineState.isAdmin) {
         goTo('screenAdminLobby');
         listenAdminLobby();
@@ -496,20 +621,57 @@ function _showMyCard(assignments) {
   unsubscribers.push(() => sRef.off('value', sHandler));
 }
 
+// ——— COUNTDOWN ———
+let countdownTimer = null;
+
+function startCountdown(onFinish) {
+  const overlay = document.getElementById('countdownOverlay');
+  const numEl   = document.getElementById('countdownNumber');
+  let count = 5;
+
+  overlay.classList.add('active');
+  numEl.textContent = count;
+  // Reiniciar animación en cada número
+  numEl.style.animation = 'none';
+  void numEl.offsetWidth; // reflow
+  numEl.style.animation = '';
+
+  countdownTimer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      numEl.textContent = count;
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth;
+      numEl.style.animation = '';
+    } else {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      overlay.classList.remove('active');
+      onFinish();
+    }
+  }, 1000);
+}
+
 // ——— TAP EN TARJETA ———
 let cardState = 0; // 0=nombre, 1=personaje revelado, 2=modo frente+listo
 
 function handleCardTap() {
   if (cardState === 0) {
-    // Primer toque: revelar personaje + rotar pantalla a horizontal (antihorario)
-    document.getElementById('onlineCardInner').classList.add('flipped');
-    document.getElementById('tapHint').textContent = '👆 Poné el celu en la frente y tocá para confirmar';
-    cardState = 1;
-    onlineState.cardRevealed = true;
+    // Primer toque: cuenta regresiva de 5 segundos, luego revelar y rotar
+    cardState = -1; // bloquear taps mientras cuenta
+    document.getElementById('tapHint').textContent = '⏳ Prepará el celular…';
 
-    // Activar modo horizontal: rotar toda la pantalla 90° antihorario
-    document.getElementById('screenCard').classList.add('card-horizontal-screen');
-    document.body.classList.add('card-horizontal');
+    startCountdown(() => {
+      // Revelar personaje
+      document.getElementById('onlineCardInner').classList.add('flipped');
+      document.getElementById('tapHint').textContent = '👆 Poné el celu en la frente y tocá para confirmar';
+      cardState = 1;
+      onlineState.cardRevealed = true;
+
+      // Activar modo horizontal: rotar toda la pantalla 90° antihorario
+      document.getElementById('screenCard').classList.add('card-horizontal-screen');
+      document.body.classList.add('card-horizontal');
+    });
 
   } else if (cardState === 1) {
     // Segundo toque: modo frente + marcar listo en un solo paso
@@ -525,25 +687,36 @@ function handleCardTap() {
     // Marcar como listo inmediatamente
     roomRef.child('game/assignments/' + onlineState.myId + '/ready').set(true);
 
-    setTimeout(() => {
-      cardState = 0;
-      // Desactivar modo horizontal al salir
-      document.getElementById('screenCard').classList.remove('card-horizontal-screen');
-      document.body.classList.remove('card-horizontal');
-      clearListeners();
+    if (onlineState.isAdmin) {
+      // Solo el admin pasa a la pantalla de espera de fin de ronda
+      setTimeout(() => {
+        cardState = 0;
+        // Desactivar modo horizontal al salir
+        document.getElementById('screenCard').classList.remove('card-horizontal-screen');
+        document.body.classList.remove('card-horizontal');
+        clearListeners();
 
-      const adminBtn = document.getElementById('adminNewRoundBtn');
-      if (adminBtn) adminBtn.style.display = onlineState.isAdmin ? 'flex' : 'none';
+        const adminBtn = document.getElementById('adminNewRoundBtn');
+        if (adminBtn) adminBtn.style.display = 'flex';
 
-      goTo('screenWaitEnd');
-      listenWaitEnd();
-    }, 1500);
+        goTo('screenWaitEnd');
+        listenWaitEnd();
+      }, 1500);
+    }
+    // Los invitados se quedan en la tarjeta — no se hace nada más
+    // (cardState = 2 bloquea futuros taps; la pantalla se actualiza
+    //  cuando el admin lance nueva partida via el listener de 'status')
+
+  } else if (cardState === 2 && !onlineState.isAdmin) {
+    // Invitados: toque extra después del modo frente → no hace nada
+    return;
   }
 }
 
 // ——— ESPERA FIN DE RONDA ———
 function listenWaitEnd() {
   clearListeners();
+  listenKicked();
   const sRef = roomRef.child('status');
   const sHandler = sRef.on('value', snap => {
     const st = snap.val();
@@ -645,6 +818,8 @@ async function joinRoom() {
 function listenPlayerWaiting() {
   clearListeners();
 
+  listenKicked();
+
   const pRef = roomRef.child('players');
   const pHandler = pRef.on('value', snap => {
     const players = snap.val() || {};
@@ -662,6 +837,7 @@ function listenPlayerWaiting() {
     }
   });
   unsubscribers.push(() => sRef.off('value', sHandler));
+
 }
 
 async function showMyOnlineCard() {
@@ -702,6 +878,7 @@ async function showMyOnlineCard() {
 
 // ——— SALIR DE SALA ———
 function leaveRoom() {
+  onlineState._categoriesEverSet = false;
   clearListeners();
   if (roomRef && onlineState.myId) {
     if (onlineState.isAdmin) roomRef.remove();
@@ -711,8 +888,9 @@ function leaveRoom() {
   clearSession();
   onlineState = {
     roomCode: '', myId: '', myName: '', isAdmin: false,
-    selectedCategories: new Set(Object.keys(CATEGORIES).slice(0, 3)),
+    selectedCategories: new Set(Object.keys(CATEGORIES).filter((_, i) => [0,1,4,5,6,7].includes(i))),
     manualWords: [], cardRevealed: false,
+    _categoriesEverSet: false,
   };
   manualWordsSetup = [];
   goTo('screenHome');
@@ -845,7 +1023,19 @@ async function reconnectToRoom(session, ref) {
 }
 
 // ——— INIT ———
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.screenId) {
+    // Vuelve a la pantalla guardada en el historial
+    goTo(event.state.screenId, false);
+  } else {
+    // Si no hay historial, vuelve al Home
+    goTo('screenHome', false);
+  }
+});
+
+
+
 window.addEventListener('load', () => {
-  cardState = 0;
+  history.replaceState({ screenId: 'screenHome' }, "", "#screenHome");
   checkPreviousSession();
 });
